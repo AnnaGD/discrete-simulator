@@ -2,7 +2,11 @@ import random
 import math
 
 class Event:
-    def __init__():
+    def __init__(self, time, event_type, process=None):
+        self.time = time
+        self.event_type = event_type
+        self.process = process
+        self.next = None
 
 class Process:
     def __init__(self, arrival_time, service_time):
