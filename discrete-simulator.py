@@ -26,12 +26,24 @@ class Event_Queue:
     
     def add_event(self, event):
         self.size += 1
-        if
+        if self.is_empty() or event.time < self.head.time:
+            event.next = self.head
+            self.head = event
         else:
-            while 
+            current = self.head
+            while current.next is not None and current.next.time < event.time:
+                current = current.next
+            event.next = current.next
+            current.next = event
 
     def pop_event(self):
+        if self.is_empty():
+            return None
+        self.size -= 1
+        event = self.head
+        self.head = event.next
         return event
+    
     def __len__(self):
         return self.size
 
