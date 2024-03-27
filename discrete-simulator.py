@@ -2,6 +2,7 @@ import random
 import math
 
 # Event in the simulation
+
 class Event:
     def __init__(self, time, event_type, process=None):
         self.time = time # The simulation time at which the event occurs
@@ -11,11 +12,10 @@ class Event:
 
 class Process:
     def __init__(self, arrival_time, service_time):
-        self.arrival = arrival_time # Arrival time of the process
-        self.service = service_time # Service time required by the process
+        self.arrival_time = arrival_time # Arrival time of the process
+        self.service_time = service_time # Service time required by the process
         self.start_time = None # Time when the process starts being serviced, updated during simulation
         self.finish_time = None # Time when the process finishes being serviced, updated during simulation
-
 class Event_Queue:
     def __init__(self):
         self.head = None
@@ -57,7 +57,7 @@ def interarrival_time(lambda_param):
     return exp_rand_num(lambda_param)
 
 # Generate service time
-def service_time(avg_service_time):
+def generate_service_time(avg_service_time):
     return exp_rand_num(1 / avg_service_time)
 
 def simulation(avg_arrival_rate, avg_service_time):
@@ -76,7 +76,7 @@ def simulation(avg_arrival_rate, avg_service_time):
         current_event = event_queue.pop_event()
         clock = current_event.time
         if current_event.event_type == 'arrival':
-            service_time = service_time(avg_service_time)
+            service_time = generate_service_time(avg_service_time)
             new_process = Process(clock, service_time)
             if not cpu_busy:
                 cpu_busy = True
@@ -86,7 +86,7 @@ def simulation(avg_arrival_rate, avg_service_time):
                 event_queue.add_event(Event(new_process.finish_time, 'departure', new_process))
             else:
                 total_processes_in_ready_queue += (clock - last_event_time) * (len(event_queue)+1)
-            next_arrival = clock + interarrival_time(avg_arrival_rate)
+            next_arrival = clock + generate_service_time(avg_arrival_rate)
             event_queue.add_event(Event(next_arrival, 'arrival'))
         elif current_event.event_type == 'departure':
             cpu_busy = False
@@ -94,7 +94,7 @@ def simulation(avg_arrival_rate, avg_service_time):
             num_of_processes_completed += 1
             if not event_queue.is_empty() and event_queue.head.event_type == 'arrival':
                 cpu_busy = True
-                next_process = Process(clock, service_time(avg_service_time))
+                next_process = Process(clock, generate_service_time(avg_service_time))
                 next_process.start_time = clock
                 next_process.finish_time = clock + next_process.service_time
                 total_cpu_busy_time += next_process.service_time
@@ -116,7 +116,7 @@ def simulator(avg_arrival_rate, avg_service_time):
             f"Average CPU Utilizaion {results[2] * 100}%\n"
             f"Average Number of Processes in Ready Queue: {results[3]}\n"
         )
-        f.writes(output)
+        f.write(output)
         f.write('\n' + '-'*50 + '\n\n')
         print(output)
                 
