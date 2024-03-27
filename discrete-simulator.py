@@ -1,9 +1,14 @@
+"""
+    In order to run the below program please run the following command `python3 discrete-simulator.py`
+"""
+
 import random
 import math
 
-# Event in the simulation
-
 class Event:
+    """
+    Represents an event in the simulation, which could be the arrival or departure of a process.
+    """
     def __init__(self, time, event_type, process=None):
         self.time = time # The simulation time at which the event occurs
         self.event_type = event_type # The type of the event
@@ -11,20 +16,30 @@ class Event:
         self.next = None # Pointer to the next event
 
 class Process:
+    """
+    Represents a process in the simulation with an arrival time and required service time.
+    """
     def __init__(self, arrival_time, service_time):
         self.arrival_time = arrival_time # Arrival time of the process
         self.service_time = service_time # Service time required by the process
         self.start_time = None # Time when the process starts being serviced, updated during simulation
         self.finish_time = None # Time when the process finishes being serviced, updated during simulation
 class Event_Queue:
+    """
+    A priority queue that manages events based on their scheduled time in ascending order.
+    """
     def __init__(self):
-        self.head = None
-        self.size = 0
+        self.head = None # Points to the first event in the queue.
+        self.size = 0 # Tracks the number of events in the queue.
     
     def is_empty(self):
+        """Returns True if the queue is empty, False otherwise."""
         return self.head is None
     
     def add_event(self, event):
+        """
+        Inserts an event into the queue in its correct position based on the event time.
+        """
         self.size += 1
         if self.is_empty() or event.time < self.head.time:
             event.next = self.head
@@ -37,6 +52,9 @@ class Event_Queue:
             current.next = event
 
     def pop_event(self):
+        """
+        Removes and returns the earliest event from the queue.
+        """
         if self.is_empty():
             return None
         self.size -= 1
@@ -45,26 +63,31 @@ class Event_Queue:
         return event
     
     def __len__(self):
+        """Returns the number of events in the queue."""
         return self.size
 
-# Generate exponential random number
+# Generates an exponential random number using the inverse transform sampling method.
 def exp_rand_num(lambda_param):
     p = random.uniform(0,1)
     return -1 / lambda_param *math.log(1-p)
 
-# Generate interarival time
+# Generates the time between arrivals based on a given rate (lambda_param).
 def interarrival_time(lambda_param):
     return exp_rand_num(lambda_param)
 
-# Generate service time
+# Generates the service time for a process based on the average service time.
 def generate_service_time(avg_service_time):
     return exp_rand_num(1 / avg_service_time)
 
 def simulation(avg_arrival_rate, avg_service_time):
+    """
+    Runs the simulation for a given arrival rate and average service time, tracking and
+    returning performance metrics.
+    """
+    # Initialize simulation variables
     clock = 0
     next_arrival_time = interarrival_time(avg_arrival_rate)
     event_queue = Event_Queue()
-    event_queue.add_event(Event(next_arrival_time, 'arrival'))
     cpu_busy = False
     num_of_processes_completed = 0
     total_turnaround_time = 0
@@ -72,9 +95,15 @@ def simulation(avg_arrival_rate, avg_service_time):
     total_processes_in_ready_queue = 0
     last_event_time = 0
 
+    # Schedule the first arrival
+    event_queue.add_event(Event(next_arrival_time, 'arrival'))
+
+    # Main simulation loop
     while num_of_processes_completed < 10000:
         current_event = event_queue.pop_event()
-        clock = current_event.time
+        clock = current_event.time # Advance simulation clock
+
+        # Handle arrival events
         if current_event.event_type == 'arrival':
             service_time = generate_service_time(avg_service_time)
             new_process = Process(clock, service_time)
@@ -88,6 +117,8 @@ def simulation(avg_arrival_rate, avg_service_time):
                 total_processes_in_ready_queue += (clock - last_event_time) * (len(event_queue)+1)
             next_arrival = clock + generate_service_time(avg_arrival_rate)
             event_queue.add_event(Event(next_arrival, 'arrival'))
+
+        # Handle departure events
         elif current_event.event_type == 'departure':
             cpu_busy = False
             total_turnaround_time += (clock - current_event.process.arrival_time)
@@ -100,6 +131,8 @@ def simulation(avg_arrival_rate, avg_service_time):
                 total_cpu_busy_time += next_process.service_time
                 event_queue.add_event(Event(next_process.finish_time, 'departure', next_process))
         last_event_time = clock
+    
+    # Calculate and return performance metrics   
     avg_turnaround_time = total_turnaround_time / 10000
     total_throughput = num_of_processes_completed / clock
     avg_cpu_utilization = total_cpu_busy_time / clock
@@ -113,7 +146,7 @@ def simulator(avg_arrival_rate, avg_service_time):
             f"Arrival Rate: {avg_arrival_rate}\n"
             f"Average Turnaround Time: {results[0]}\n"
             f"Total Throughput: {results[1]} processes per second\n"
-            f"Average CPU Utilizaion {results[2] * 100}%\n"
+            f"Average CPU Utilization {results[2] * 100}%\n"
             f"Average Number of Processes in Ready Queue: {results[3]}\n"
         )
         f.write(output)
