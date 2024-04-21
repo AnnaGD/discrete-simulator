@@ -79,23 +79,22 @@ def interarrival_time(lambda_param):
 def generate_service_time(avg_service_time):
     return exp_rand_num(1 / avg_service_time)
 
-def simulation(avg_arrival_rate, avg_service_time):
+def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
     """
-    Runs the simulation for a given arrival rate and average service time, tracking and
-    returning performance metrics.
+    Runs the simulation for given parameters, tracking and returning performance metrics.
     """
     # Initialize simulation variables
     clock = 0
-    next_arrival_time = interarrival_time(avg_arrival_rate)
     event_queue = Event_Queue()
-    cpu_busy = False
     num_of_processes_completed = 0
     total_turnaround_time = 0
     total_cpu_busy_time = 0
     total_processes_in_ready_queue = 0
-    last_event_time = 0
-
-    # Schedule the first arrival
+    cpu_status = [False] * num_cpus # CPU busy status for multiple CPUs
+    ready_queues = [[] for _ in range(num_cpus)] if scenario == 1 else [[]] # Scenario-specific ready queues
+    
+    # Initilize the first arrival
+    next_arrival_time = interarrival_time(avg_arrival_rate)
     event_queue.add_event(Event(next_arrival_time, 'arrival'))
 
     # Main simulation loop
