@@ -106,16 +106,22 @@ def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
         if current_event.event_type == 'arrival':
             service_time = generate_service_time(avg_service_time)
             new_process = Process(clock, service_time)
-            if not cpu_busy:
-                cpu_busy = True
-                new_process.start_time = clock
-                new_process.finish_time = clock + service_time
-                total_cpu_busy_time += service_time
-                event_queue.add_event(Event(new_process.finish_time, 'departure', new_process))
+            if scenario == 1:
+                # Scenario 1: Assign to a random CPU's queue
+                chosen_cpu = random.randint(0, num_cpus - 1)
+                ready_queues[chosen_cpu].append(new_process)
             else:
-                total_processes_in_ready_queue += (clock - last_event_time) * (len(event_queue)+1)
-            next_arrival = clock + generate_service_time(avg_arrival_rate)
+                # Scenario 2: Assign to the global queue
+                ready_queues[0].append(new_process)
+            
+            # Schedule next arrival
+            next_arrival = clock + interarrival_time(avg_arrival_rate)
             event_queue.add_event(Event(next_arrival, 'arrival'))
+
+        # Implement the rest of the logic for handling departures and checking CPU availability
+        # This will involve checking each CPU's status, assigning processes from queues, etc.
+
+
 
         # Handle departure events
         elif current_event.event_type == 'departure':
