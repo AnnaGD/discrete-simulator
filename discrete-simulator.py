@@ -34,49 +34,18 @@ class Process:
         self.start_time = None # Time when the process starts being serviced, updated during simulation
         self.finish_time = None # Time when the process finishes being serviced, updated during simulation
 class Event_Queue:
-   
     def __init__(self):
-        self.head = None # Points to the first event in the queue.
-        self.size = 0 # Tracks the number of events in the queue.
-    
-    def is_empty(self):
-        """Returns True if the queue is empty, False otherwise."""
-        return self.head is None
-    
+        self.events = []
+
     def add_event(self, event):
-        """
-        Inserts an event into the queue in its correct position based on the event time.
-        """
-        self.size += 1
-        if self.is_empty() or event.time < self.head.time:
-            event.next = self.head
-            self.head = event
-        else:
-            current = self.head
-            while current.next is not None and current.next.time < event.time:
-                current = current.next
-            event.next = current.next
-            current.next = event
+        self.events.append(event)
+        self.events.sort(key=lambda x: x.time)  # Sort by event time
 
     def pop_event(self):
-        """
-        Removes and returns the earliest event from the queue.
-        """
-        if self.is_empty():
-            return None
-        self.size -= 1
-        event = self.head
-        self.head = event.next
-        return event
-    
-    def __len__(self):
-        """Returns the number of events in the queue."""
-        return self.size
+        return self.events.pop(0) if self.events else None
 
-# Generates an exponential random number using the inverse transform sampling method.
 def exp_rand_num(lambda_param):
-    p = random.uniform(0,1)
-    return -1 / lambda_param *math.log(1-p)
+    return -math.log(1 - random.random()) / lambda_param
 
 # Generates the time between arrivals based on a given rate (lambda_param).
 def interarrival_time(lambda_param):
