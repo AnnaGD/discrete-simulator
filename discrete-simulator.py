@@ -88,6 +88,46 @@ def interarrival_time(lambda_param):
 def generate_service_time(avg_service_time):
     return exp_rand_num(1 / avg_service_time)
 
+def handle_arrival(event, clock, cpu_status, ready_queues, event_queue, scenario):
+    new_process = Process(clock, generate_service_time(avg_service_time))
+
+    # Find an available CPU or assign to queue
+    available_cpu = None
+    for i in range(len(cpu_status)):
+        if not cpu_status[i]: # CPU is free
+            available_cpu = i
+            break
+    if available_cpu is not None and (scenario == 1 and not ready_queues[available_cpu]):
+        # Start processing immediately if global queue is empty or own queue is empty in scenario 1
+        cpu_status[available_cpu] = True
+        new_process.start_time = clock
+        new_process.finish_time = clock + new_process.service_time
+        event_queue.add_event(Event(new_process.finish_time, 'departure', new_process, available_cpu))
+    else:
+        # Add to the appropriate queue
+        if scenario == 1:
+            ready_queues[available_cpu].append(new_process)
+        else:
+            ready_queues[0].append(new_process)
+
+    def handle_departure(event, clock, cpu_statis, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed):
+        cpu_index = event.process.cpu_index
+        cpu_status[cpu_index] = False
+        total_turnaround_time += clock - event.process.arrival_time
+        num_of_processes_completed += 1
+
+        # Check if there's a process in the queue
+        if ready_queues[cpu_index]: # Update based upon scenario
+            next_process = ready_queues[cpu_index].pop(0)
+            cpu_status[cpu_index] = True
+            next_process.start_time = clock
+            next_process.finish_time = clock + next_process.service_time
+            event_queue.add_event(Event(next_process.finish_time, 'departure', next_process, cpu_index))
+
+        return total_turnaround_time, num_of_processes_completed
+
+
+
 def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
     """
     Runs the simulation for given parameters, tracking and returning performance metrics.
