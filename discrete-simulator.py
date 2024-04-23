@@ -1,5 +1,14 @@
 """
-    In order to run the below program please run the following command `python3 discrete-simulator.py`
+In order to run the below program please run the following command `python3 discrete-simulator.py`
+
+Process overview:
+
+    Event Queue
+    ↓
+[Arrival] → Determine which queue (based on scenario) → If CPU available, begin processing
+    ↓
+[Departure] → Free CPU → Check queue for next process → Process next item
+
 """
 
 import random
@@ -121,28 +130,31 @@ def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
         # Implement the rest of the logic for handling departures and checking CPU availability
         # This will involve checking each CPU's status, assigning processes from queues, etc.
 
-
-
-        # Handle departure events
-        elif current_event.event_type == 'departure':
-            cpu_busy = False
-            total_turnaround_time += (clock - current_event.process.arrival_time)
-            num_of_processes_completed += 1
-            if not event_queue.is_empty() and event_queue.head.event_type == 'arrival':
-                cpu_busy = True
-                next_process = Process(clock, generate_service_time(avg_service_time))
-                next_process.start_time = clock
-                next_process.finish_time = clock + next_process.service_time
-                total_cpu_busy_time += next_process.service_time
-                event_queue.add_event(Event(next_process.finish_time, 'departure', next_process))
-        last_event_time = clock
-    
-    # Calculate and return performance metrics   
-    avg_turnaround_time = total_turnaround_time / 10000
-    total_throughput = num_of_processes_completed / clock
-    avg_cpu_utilization = total_cpu_busy_time / clock
+    avg_turnaround_time = total_turnaround_time / num_of_processes_completed
+    avg_cpu_utilization = total_cpu_busy_time / clock / num_cpus # Average across all CPUs
     avg_process_in_ready_queue = total_processes_in_ready_queue / clock
     return avg_turnaround_time, total_throughput, avg_cpu_utilization, avg_process_in_ready_queue
+
+        # Handle departure events
+      #  elif current_event.event_type == 'departure':
+          #  cpu_busy = False
+           # total_turnaround_time += (clock - current_event.process.arrival_time)
+           # num_of_processes_completed += 1
+            #if not event_queue.is_empty() and event_queue.head.event_type == 'arrival':
+               # cpu_busy = True
+               # next_process = Process(clock, generate_service_time(avg_service_time))
+               # next_process.start_time = clock
+               # next_process.finish_time = clock + next_process.service_time
+                #total_cpu_busy_time += next_process.service_time
+                #event_queue.add_event(Event(next_process.finish_time, 'departure', next_process))
+       # last_event_time = clock
+    
+    # Calculate and return performance metrics   
+    #avg_turnaround_time = total_turnaround_time / 10000
+   # total_throughput = num_of_processes_completed / clock
+    #avg_cpu_utilization = total_cpu_busy_time / clock
+    #avg_process_in_ready_queue = total_processes_in_ready_queue / clock
+    #return avg_turnaround_time, total_throughput, avg_cpu_utilization, avg_process_in_ready_queue
 
 def simulator(avg_arrival_rate, avg_service_time):
     with open('simulation_output', 'a') as f:
@@ -160,9 +172,11 @@ def simulator(avg_arrival_rate, avg_service_time):
                 
 
 def main():
-    avg_service_time = 0.04 # Constant average service time for all simulations
-    for avg_arrival_rate in range(10, 31): # Loop over average arrival rates from 10 to 30
-        simulator(avg_arrival_rate, avg_service_time) # Run simulation for each arrival rate
+    avg_service_time = 0.02 # Constant average service time
+    num_cpus = 4
+    scenario = 1 # Test scenario 1
+    for avg_arrival_rate in range(50, 151, 10): # Vary arrival rate from 50 to 150
+        simulator(avg_arrival_rate, avg_service_time, num_cpus, scenario)
 
 if __name__ == "__main__":
     main()
