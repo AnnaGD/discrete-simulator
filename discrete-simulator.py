@@ -47,13 +47,6 @@ class Event_Queue:
 def exp_rand_num(lambda_param):
     return -math.log(1 - random.random()) / lambda_param
 
-# Generates the time between arrivals based on a given rate (lambda_param).
-def interarrival_time(lambda_param):
-    return exp_rand_num(lambda_param)
-
-# Generates the service time for a process based on the average service time.
-def generate_service_time(avg_service_time):
-    return exp_rand_num(1 / avg_service_time)
 
 def handle_arrival(event, clock, cpu_status, ready_queues, event_queue, scenario):
     new_process = Process(clock, generate_service_time(avg_service_time))
@@ -77,21 +70,21 @@ def handle_arrival(event, clock, cpu_status, ready_queues, event_queue, scenario
         else:
             ready_queues[0].append(new_process)
 
-    def handle_departure(event, clock, cpu_statis, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed):
-        cpu_index = event.process.cpu_index
-        cpu_status[cpu_index] = False
-        total_turnaround_time += clock - event.process.arrival_time
-        num_of_processes_completed += 1
+def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed):
+    cpu_index = current_event.cpu_index
+    cpu_status[cpu_index] = False
+    total_turnaround_time += clock - current_event.process.arrival_time
+    num_of_processes_completed += 1
 
-        # Check if there's a process in the queue
-        if ready_queues[cpu_index]: # Update based upon scenario
-            next_process = ready_queues[cpu_index].pop(0)
-            cpu_status[cpu_index] = True
-            next_process.start_time = clock
-            next_process.finish_time = clock + next_process.service_time
-            event_queue.add_event(Event(next_process.finish_time, 'departure', next_process, cpu_index))
+    # Check if there's a process in the queue
+    if ready_queues[cpu_index]: # Update based upon scenario
+        next_process = ready_queues[cpu_index].pop(0)
+        next_process.start_time = clock
+        next_process.finish_time = clock + next_process.service_time
+        cpu_status[cpu_index] = True
+        event_queue.add_event(Event(next_process.finish_time, 'departure', next_process, cpu_index))
 
-        return total_turnaround_time, num_of_processes_completed
+    return total_turnaround_time, num_of_processes_completed
 
 
 
