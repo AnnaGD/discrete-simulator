@@ -47,28 +47,60 @@ class Event_Queue:
 def exp_rand_num(lambda_param):
     return -math.log(1 - random.random()) / lambda_param
 
+def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
+    clock = 0
+    event_queue = Event_Queue()
+    num_of_processes_completed = 0
+    total_turnaround_time = 0
+    total_cpu_busy_time = 0
+    total_processes_in_ready_queue = 0
+    cpu_status = [False] * num_cpus
+    ready_queues = [[] for _ in range(num_cpus)] if scenario == 1 else [[]]
 
-def handle_arrival(event, clock, cpu_status, ready_queues, event_queue, scenario):
-    new_process = Process(clock, generate_service_time(avg_service_time))
+    next_arrival_time = exp_rand_num(avg_arrival_rate)
+    event_queue.add_event(Event(next_arrival_time, 'arrival'))
 
-    # Find an available CPU or assign to queue
+    while num_of_processes_completed < 10000:
+        current_event = event_queue.pop_event()
+        if not current_event:
+            break
+        clock = current_event.time
+
+        if current_event.event_type == 'arrival':
+            handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, avg_service_time)
+            # Schedule next arrival
+            next_arrival_time = clock + exp_rand_num(avg_arrival_rate)
+            event_queue.add_event(Event(next_arrival_time, 'arrival'))
+        elif current_event.event_type == 'departure':
+            total_turnaround_time, num_of_processes_completed = handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed)
+
+    avg_turnaround_time = total_turnaround_time / num_of_processes_completed
+    total_throughput = num_of_processes_completed / clock
+    avg_cpu_utilization = (total_cpu_busy_time / clock) / num_cpus
+    avg_processes_in_queue = total_processes_in_ready_queue / clock
+
+    return avg_turnaround_time, total_throughput, avg_cpu_utilization, avg_processes_in_queue
+
+def handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, avg_service_time):
+    new_process = Process(clock, exp_rand_num(1 / avg_service_time))
     available_cpu = None
     for i in range(len(cpu_status)):
-        if not cpu_status[i]: # CPU is free
+        if not cpu_status[i]:
             available_cpu = i
             break
-    if available_cpu is not None and (scenario == 1 and not ready_queues[available_cpu]):
-        # Start processing immediately if global queue is empty or own queue is empty in scenario 1
+
+    if available_cpu is not None and (scenario == 2 or (scenario == 1 and not ready_queues[available_cpu])):
         cpu_status[available_cpu] = True
         new_process.start_time = clock
         new_process.finish_time = clock + new_process.service_time
         event_queue.add_event(Event(new_process.finish_time, 'departure', new_process, available_cpu))
     else:
-        # Add to the appropriate queue
         if scenario == 1:
-            ready_queues[available_cpu].append(new_process)
+            chosen_cpu = random.randint(0, len(ready_queues) - 1)
+            ready_queues[chosen_cpu].append(new_process)
         else:
             ready_queues[0].append(new_process)
+
 
 def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed):
     cpu_index = current_event.cpu_index
@@ -85,69 +117,6 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
         event_queue.add_event(Event(next_process.finish_time, 'departure', next_process, cpu_index))
 
     return total_turnaround_time, num_of_processes_completed
-
-
-
-def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
-    """
-    Runs the simulation for given parameters, tracking and returning performance metrics.
-    """
-    # Initialize simulation variables
-    clock = 0
-    event_queue = Event_Queue()
-    num_of_processes_completed = 0
-    total_turnaround_time = 0
-    total_cpu_busy_time = 0
-    total_processes_in_ready_queue = 0
-    cpu_status = [False] * num_cpus # CPU busy status for multiple CPUs
-    ready_queues = [[] for _ in range(num_cpus)] if scenario == 1 else [[]] # Scenario-specific ready queues
-    
-    # Initilize the first arrival
-    next_arrival_time = interarrival_time(avg_arrival_rate)
-    event_queue.add_event(Event(next_arrival_time, 'arrival'))
-
-    # Main simulation loop
-    while num_of_processes_completed < 10000:
-        current_event = event_queue.pop_event()
-        clock = current_event.time # Advance simulation clock
-
-        while num_of_processes_completed < 10000:
-            current_event = event_queue.pop_event()
-            clock = current_event.time
-
-            if current_event.event_type == 'arrival':
-                handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario)
-            elif current_event.event_type == 'departure':
-                total_turnaround_time, num_of_processes_completed = handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed)
-
-def simulator(avg_arrival_rate, avg_service_time):
-    with open('simulation_output', 'a') as f:
-        results = simulation(avg_arrival_rate, avg_service_time)
-        output = (
-            f"Arrival Rate: {avg_arrival_rate}\n"
-            f"Average Turnaround Time: {results[0]}\n"
-            f"Total Throughput: {results[1]} processes per second\n"
-            f"Average CPU Utilization {results[2] * 100}%\n"
-            f"Average Number of Processes in Ready Queue: {results[3]}\n"
-        )
-        f.write(output)
-        f.write('\n' + '-'*50 + '\n\n')
-        print(output)
-
-    # Calculate final metrics
-    avg_turnaround_time = total_turnaround_time / num_of_processes_completed
-    total_throughput = num_of_processes_completed / clock
-    avg_cpu_utilization = (total_cpu_busy_time / clock) / num_cpus
-    avg_processes_in_queue = total_processes_in_ready_queue / clock
-
-    # Output the results
-    print(f"Metrics for λ={avg_arrival_rate}, Scenario {scenario}:")
-    print(f"Average Turnaround Time: {avg_turnaround_time}")
-    print(f"Total Throughput: {total_throughput} processes/sec")
-    print(f"Average CPU Utilization: {avg_cpu_utilization * 100}%")
-    print(f"Average Processes in Queue: {avg_processes_in_queue}\n")
-
-    return avg_turnaround_time, total_throughput, avg_cpu_utilization, avg_processes_in_queue
                 
 
 def main():
