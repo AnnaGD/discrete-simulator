@@ -13,6 +13,7 @@ Process overview:
 
 import random
 import math
+import sys
 
 class Event:
     """
@@ -120,12 +121,20 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
                 
 
 def main():
-    avg_service_time = 0.02 # Constant average service time
-    num_cpus = 4
-    for scenario in [1, 2]:
-        print(f"Running simulations for Scenario {scenario}")
-        for avg_arrival_rate in range(50, 151, 10):  # Vary arrival rate from 50 to 150
-            simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario)
+    if len(sys.argv) != 5:
+        print("Usage: python3 discrete-simulator.py <avg_arrival_rate> <avg_service_time> <scenario> <num_cpus>")
+        return
+
+    avg_arrival_rate = float(sys.argv[1])
+    avg_service_time = float(sys.argv[2])
+    scenario = int(sys.argv[3])
+    num_cpus = int(sys.argv[4])
+
+    results = simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario)
+    print(f"Average Turnaround Time: {results[0]}")
+    print(f"Total Throughput: {results[1]} processes per second")
+    print(f"Average CPU Utilization: {results[2] * 100}%")
+    print(f"Average Number of Processes in Ready Queue: {results[3]}")
 
 if __name__ == "__main__":
     main()
