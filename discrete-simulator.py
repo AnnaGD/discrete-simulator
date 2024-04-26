@@ -117,8 +117,14 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
     total_turnaround_time += clock - current_event.process.arrival_time
     num_of_processes_completed += 1
 
-    if ready_queues[cpu_index]:
-        next_process = ready_queues[cpu_index].pop(0)
+    # Determine the correct queue based on the scenario
+    # This ensures that in Scenario 2, the shared queue is always accessed,
+    # and in Scenario 1, each CPU accesses its own queue.
+    queue_index = 0 if len(ready_queues) == 1 else cpu_index
+
+    # Check if there's a process waiting in the correct queue and assign it to the CPU
+    if ready_queues[queue_index]:
+        next_process = ready_queues[queue_index].pop(0)
         assign_process_to_cpu(next_process, cpu_index, clock, event_queue, cpu_status)
 
     return total_turnaround_time, num_of_processes_completed
