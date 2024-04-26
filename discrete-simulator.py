@@ -91,7 +91,7 @@ def handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, 
                 available_cpu = i
                 break
         if available_cpu is not None:
-            assign_process_to_cpu(new_process, available_cpu, clock, event_queue)
+            assign_process_to_cpu(new_process, available_cpu, clock, event_queue, cpu_status)
         else:
             chosen_cpu = random.randint(0, len(ready_queues) - 1)
             ready_queues[chosen_cpu].append(new_process)
@@ -99,12 +99,12 @@ def handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, 
         if any(not stat for stat in cpu_status):
             for i, stat in enumerate(cpu_status):
                 if not stat:
-                    assign_process_to_cpu(new_process, i, clock, event_queue)
+                    assign_process_to_cpu(new_process, i, clock, event_queue, cpu_status)
                     break
         else:
             ready_queues[0].append(new_process)
 
-def assign_process_to_cpu(process, cpu_index, clock, event_queue):
+def assign_process_to_cpu(process, cpu_index, clock, event_queue, cpu_status):
     cpu_status[cpu_index] = True
     process.start_time = clock
     process.finish_time = clock + process.service_time
@@ -119,7 +119,7 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
 
     if ready_queues[cpu_index]:
         next_process = ready_queues[cpu_index].pop(0)
-        assign_process_to_cpu(next_process, cpu_index, clock, event_queue)
+        assign_process_to_cpu(next_process, cpu_index, clock, event_queue, cpu_status)
 
     return total_turnaround_time, num_of_processes_completed
 
