@@ -123,21 +123,33 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
 
     return total_turnaround_time, num_of_processes_completed
 
+def run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time):
+    print(f"\nRunning simulation for Scenario {scenario}, with {num_cpus} CPUs, arrival rate {avg_arrival_rate} and service time {avg_service_time}")
+    results = simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario)
+    print(f"Average Turnaround Time: {results[0]:.5f}")
+    print(f"Total Throughput: {results[1]:.5f} processes/sec")
+    print(f"Average CPU Utilization: {results[2]*100:.2f}%")
+    print(f"Average Number of Processes in Ready Queue: {results[3]:.5f}")
+
 def main():
     if len(sys.argv) != 5:
-        print("Usage: python3 discrete-simulator.py <avg_arrival_rate> <avg_service_time> <scenario> <num_cpus>")
+        print("Usage: python3 discrete-simulator.py <scenario> <num_cpus> <avg_arrival_rate> <avg_service_time>")
         return
 
-    avg_arrival_rate = float(sys.argv[1])
-    avg_service_time = float(sys.argv[2])
-    scenario = int(sys.argv[3])
-    num_cpus = int(sys.argv[4])
+    scenario = int(sys.argv[1])
+    num_cpus = int(sys.argv[2])
+    avg_arrival_rate = float(sys.argv[3])
+    avg_service_time = float(sys.argv[4])
 
-    results = simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario)
-    print(f"Average Turnaround Time: {results[0]}")
-    print(f"Total Throughput: {results[1]} processes per second")
-    print(f"Average CPU Utilization: {results[2] * 100}%")
-    print(f"Average Number of Processes in Ready Queue: {results[3]}")
+    run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time)
+
+    while True:
+        response = input("Run another scenario? Enter 1 for Scenario 1, 2 for Scenario 2, or 'exit' to quit: ")
+        if response.lower() == 'exit':
+            break
+        else:
+            scenario = int(response)
+            run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time)
 
 if __name__ == "__main__":
     main()
