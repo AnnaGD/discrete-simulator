@@ -68,12 +68,13 @@ def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
         clock = current_event.time
 
         if current_event.event_type == 'arrival':
-            handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, avg_service_time)
-            # Schedule next arrival
+            new_process = Process(clock, exp_rand_num(1 / avg_service_time))
+            handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, new_process)
             next_arrival_time = clock + exp_rand_num(avg_arrival_rate)
             event_queue.add_event(Event(next_arrival_time, 'arrival'))
         elif current_event.event_type == 'departure':
             total_turnaround_time, num_of_processes_completed = handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed)
+
 
     avg_turnaround_time = total_turnaround_time / num_of_processes_completed
     total_throughput = num_of_processes_completed / clock
@@ -82,25 +83,32 @@ def simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario):
 
     return avg_turnaround_time, total_throughput, avg_cpu_utilization, avg_processes_in_queue
 
-def handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, avg_service_time):
-    new_process = Process(clock, exp_rand_num(1 / avg_service_time))
-    available_cpu = None
-    for i in range(len(cpu_status)):
-        if not cpu_status[i]:
-            available_cpu = i
-            break
-
-    if available_cpu is not None and (scenario == 2 or (scenario == 1 and not ready_queues[available_cpu])):
-        cpu_status[available_cpu] = True
-        new_process.start_time = clock
-        new_process.finish_time = clock + new_process.service_time
-        event_queue.add_event(Event(new_process.finish_time, 'departure', new_process, available_cpu))
-    else:
-        if scenario == 1:
+def handle_arrival(current_event, clock, cpu_status, ready_queues, event_queue, scenario, new_process):
+    if scenario == 1:
+        available_cpu = None
+        for i in range(len(cpu_status)):
+            if not cpu_status[i]:
+                available_cpu = i
+                break
+        if available_cpu is not None:
+            assign_process_to_cpu(new_process, available_cpu, clock, event_queue)
+        else:
             chosen_cpu = random.randint(0, len(ready_queues) - 1)
             ready_queues[chosen_cpu].append(new_process)
+    elif scenario == 2:
+        if any(not stat for stat in cpu_status):
+            for i, stat in enumerate(cpu_status):
+                if not stat:
+                    assign_process_to_cpu(new_process, i, clock, event_queue)
+                    break
         else:
             ready_queues[0].append(new_process)
+
+def assign_process_to_cpu(process, cpu_index, clock, event_queue):
+    cpu_status[cpu_index] = True
+    process.start_time = clock
+    process.finish_time = clock + process.service_time
+    event_queue.add_event(Event(process.finish_time, 'departure', process, cpu_index))
 
 
 def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue, total_turnaround_time, num_of_processes_completed):
@@ -109,16 +117,11 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
     total_turnaround_time += clock - current_event.process.arrival_time
     num_of_processes_completed += 1
 
-    # Check if there's a process in the queue
-    if ready_queues[cpu_index]: # Update based upon scenario
+    if ready_queues[cpu_index]:
         next_process = ready_queues[cpu_index].pop(0)
-        next_process.start_time = clock
-        next_process.finish_time = clock + next_process.service_time
-        cpu_status[cpu_index] = True
-        event_queue.add_event(Event(next_process.finish_time, 'departure', next_process, cpu_index))
+        assign_process_to_cpu(next_process, cpu_index, clock, event_queue)
 
     return total_turnaround_time, num_of_processes_completed
-                
 
 def main():
     if len(sys.argv) != 5:
