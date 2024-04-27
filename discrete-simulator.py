@@ -1,5 +1,6 @@
 """
 In order to run the below program please run the following command `python3 discrete-simulator.py`
+Additional directions will follow via the terminal, the output will produce a txt file with scenario output.
 
 Process overview:
 
@@ -129,17 +130,24 @@ def handle_departure(current_event, clock, cpu_status, ready_queues, event_queue
 
     return total_turnaround_time, num_of_processes_completed
 
-def run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time):
-    print(f"\nRunning simulation for Scenario {scenario}, with {num_cpus} CPUs, arrival rate {avg_arrival_rate} and service time {avg_service_time}")
+def simulator_run(scenario, num_cpus, avg_arrival_rate, avg_service_time):
     results = simulation(avg_arrival_rate, avg_service_time, num_cpus, scenario)
-    print(f"Average Turnaround Time: {results[0]:.5f}")
-    print(f"Total Throughput: {results[1]:.5f} processes/sec")
-    print(f"Average CPU Utilization: {results[2]*100:.2f}%")
-    print(f"Average Number of Processes in Ready Queue: {results[3]:.5f}")
+    with open('simulation_results.txt', 'a') as f:
+        output = (
+            f"Scenario {scenario}:\n"
+            f"Arrival Rate: {avg_arrival_rate}\n"
+            f"Average Turnaround Time: {results[0]}\n"
+            f"Total Throughput: {results[1]} processes per second\n"
+            f"Average CPU Utilization: {results[2] * 100}%\n"
+            f"Average Number of Processes in Ready Queue: {results[3]}\n"
+            + '-'*50 + '\n\n'
+        )
+        f.write(output)
+        print(output)
 
 def main():
     if len(sys.argv) != 5:
-        print("Usage: python3 discrete-simulator.py <scenario> <num_cpus> <avg_arrival_rate> <avg_service_time>")
+        print("Please run the following command along with your desired metrics: python3 discrete-simulator.py <scenario> <num_cpus> <avg_arrival_rate> <avg_service_time>")
         return
 
     scenario = int(sys.argv[1])
@@ -147,7 +155,11 @@ def main():
     avg_arrival_rate = float(sys.argv[3])
     avg_service_time = float(sys.argv[4])
 
-    run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time)
+    # Setting a constant service time of 0.02 seconds as specified
+    avg_service_time = 0.02
+    # Loop over arrival rates from 50 to 150 in steps of 10
+    for avg_arrival_rate in range(50, 151, 10):
+        simulator_run(scenario, num_cpus, avg_arrival_rate, avg_service_time)
 
     while True:
         response = input("Run another scenario? Enter 1 for Scenario 1, 2 for Scenario 2, or 'exit' to quit: ")
@@ -155,7 +167,7 @@ def main():
             break
         else:
             scenario = int(response)
-            run_simulation(scenario, num_cpus, avg_arrival_rate, avg_service_time)
+            simulator_run(scenario, num_cpus, avg_arrival_rate, avg_service_time)
 
 if __name__ == "__main__":
     main()
